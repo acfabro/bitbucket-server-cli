@@ -1,6 +1,7 @@
 /target
 /.idea
 /temp
+/bitbucket-server-cli
 *.iml
 *.code-workspace
-bitbucket-server-cli
+.DS_Store

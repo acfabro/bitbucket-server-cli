@@ -1,25 +1,92 @@
+# PR Check Workflow
+# This workflow runs on pull requests and pushes to main to ensure code quality and version bumping
+
 name: PR Check
 
 on:
+  # Run on pushes to the main branch
   push:
-    branches: [ $default-branch ]
+    branches: [ main ]
+  # Run on pull request events (when opened, edited, or new commits are pushed)
   pull_request:
     types:
-      - opened
-      - edited
-      - synchronize
+      - opened      # When a PR is first created
+      - edited      # When the PR title or description is edited
+      - synchronize # When new commits are pushed to the PR branch
 
 env:
-  CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: always  # Enable colorized output for Cargo commands
 
 jobs:
+  # Build and test job - ensures the code compiles and tests pass
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # Checkout the repository code
       - name: Build
-        run: cargo build
+        run: cargo build  # Compile the project
       - name: Run tests
-        run: cargo test
+        run: cargo test   # Run all tests
+
+  # Version check job - ensures the version has been bumped when necessary
+  version-check:
+    runs-on: ubuntu-latest
+    # Only run this job for pull requests, not for pushes to main
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4  # Checkout the PR branch
+        
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+        
+      - name: Check if version bump is needed
+        id: check-changes
+        run: |
+          # Check if any source files or Cargo.toml have changed
+          NEEDS_BUMP=false
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ $file == src/* ]] || [[ $file == Cargo.toml ]]; then
+              NEEDS_BUMP=true
+              break
+            fi
+          done
+          echo "needs_bump=$NEEDS_BUMP" >> $GITHUB_OUTPUT
+          
+      - name: Get current version
+        id: current_version
+        if: steps.check-changes.outputs.needs_bump == 'true'
+        run: |
+          # Extract the version from Cargo.toml in the PR branch
+          CURRENT_VERSION=$(grep '^version =' Cargo.toml | head -n 1 | cut -d '"' -f 2)
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        if: steps.check-changes.outputs.needs_bump == 'true'
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}  # Checkout the target branch of the PR
+          path: base  # Put it in a subdirectory called 'base'
+          
+      - name: Get base version
+        id: base_version
+        if: steps.check-changes.outputs.needs_bump == 'true'
+        run: |
+          # Extract the version from Cargo.toml in the base branch
+          BASE_VERSION=$(grep '^version =' base/Cargo.toml | head -n 1 | cut -d '"' -f 2)
+          echo "base=$BASE_VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Compare versions
+        if: steps.check-changes.outputs.needs_bump == 'true'
+        run: |
+          echo "Current version: ${{ steps.current_version.outputs.current }}"
+          echo "Base version: ${{ steps.base_version.outputs.base }}"
+          
+          # Fail the workflow if the version hasn't been bumped
+          if [ "${{ steps.current_version.outputs.current }}" == "${{ steps.base_version.outputs.base }}" ]; then
+            echo "Error: Version in Cargo.toml must be bumped when source code or Cargo.toml changes"
+            exit 1
+          else
+            echo "Version has been bumped from ${{ steps.base_version.outputs.base }} to ${{ steps.current_version.outputs.current }}"
+          fi
