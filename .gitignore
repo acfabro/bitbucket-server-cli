@@ -1,0 +1,6 @@
+/target
+/.idea
+/temp
+*.iml
+*.code-workspace
+bitbucket-server-cli
