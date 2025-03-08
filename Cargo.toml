@@ -1,6 +1,6 @@
 [package]
 name = "bitbucket-server-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [lib]
@@ -17,9 +17,7 @@ clap_derive = "4.5.28"
 serde_json = "1.0.138"
 tokio = { version = "1.43.0", features = ["full"] }
 env_logger = "0.11.6"
-
-[dependencies.bitbucket-server-rs]
-path = "../bitbucket-server-rs"
+bitbucket-server-rs = "0.3.2"
 
 [dev-dependencies]
 mockito = "1.4.0"

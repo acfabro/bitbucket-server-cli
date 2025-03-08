@@ -136,7 +136,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bitbucket-server-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bitbucket-server-rs",
  "clap",
@@ -149,7 +149,9 @@ dependencies = [
 
 [[package]]
 name = "bitbucket-server-rs"
-version = "0.3.0"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b0c12e48c31109bd173b2c7c983672bdc73aa5b0eef6edc373090500c061fb6"
 dependencies = [
  "chrono",
  "derive_builder",
